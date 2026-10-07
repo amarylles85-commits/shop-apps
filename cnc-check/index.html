@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1720">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CNC Check">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>CNC Check</title>
+<style>
+:root{--bg:#0f1720;--card:#17212c;--line:#2a3746;--txt:#e6edf3;--mut:#8ea0b3;--acc:#3ea6ff;--red:#ff4d4f;--amb:#ffb020;--grn:#2ecc71}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#0b1118;border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 8px) 12px 8px}
+header h1{margin:0 0 6px;font-size:18px}
+.steps{display:flex;gap:6px}
+.steps button{flex:1;padding:7px 2px;font-size:12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut)}
+.steps button.on{background:var(--acc);color:#001;border-color:var(--acc);font-weight:600}
+.steps button.done{color:var(--txt);border-color:#2f5a3e}
+main{padding:12px;padding-bottom:calc(env(safe-area-inset-bottom) + 80px);max-width:820px;margin:auto}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 8px}
+p.hint{color:var(--mut);margin:4px 0 10px;font-size:13px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0b1118;color:var(--txt);font-size:16px}
+textarea{height:110px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.btn{display:inline-block;width:100%;padding:13px;border-radius:10px;border:0;background:var(--acc);color:#001;font-weight:700;font-size:16px;margin-top:10px;text-align:center}
+.btn.sec{background:#243142;color:var(--txt);font-weight:600}
+.btn.small{width:auto;padding:8px 12px;font-size:14px;margin-top:6px}
+.btn.link{background:none;color:var(--acc);padding:6px 0;width:auto;font-weight:600;font-size:14px}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0}
+.seg button{flex:1;padding:10px;border:0;background:transparent;color:var(--mut);font-size:14px}
+.seg button.on{background:#243142;color:var(--txt);font-weight:600}
+canvas{display:block;width:100%;border-radius:10px;background:#000;touch-action:none}
+.instr{background:#10283d;border:1px solid #1f4d73;color:#cfe8ff;padding:10px;border-radius:10px;font-size:14px;margin:8px 0}
+.warn{background:#3a2a0b;border:1px solid var(--amb);color:#ffd98a;padding:10px;border-radius:10px;font-size:14px;margin:8px 0}
+.meas{font-size:19px;font-weight:700;margin:8px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px;text-align:left;border-bottom:1px solid var(--line)}
+td input{padding:6px;font-size:15px}
+.banner{padding:14px;border-radius:12px;font-size:18px;font-weight:800;margin-bottom:10px}
+.banner.red{background:#3a1214;color:#ffb3b4;border:1px solid var(--red)}
+.banner.amb{background:#3a2a0b;color:#ffd98a;border:1px solid var(--amb)}
+.banner.grn{background:#0f2e1c;color:#9ff0c0;border:1px solid var(--grn)}
+.banner small{display:block;font-size:13px;font-weight:600;opacity:.85;margin-top:4px}
+.issue{border-left:4px solid var(--mut);background:#111a23;padding:8px 10px;border-radius:8px;margin:6px 0}
+.issue.CRASH{border-color:var(--red)}.issue.CHECK{border-color:var(--amb)}.issue.INFO{border-color:#4b5b6c}
+.issue.sel{outline:2px solid var(--acc)}
+.issue .t{font-weight:700;font-size:13px}.issue .t.CRASH{color:var(--red)}.issue .t.CHECK{color:var(--amb)}.issue .t.INFO{color:var(--mut)}
+.issue code{display:block;color:var(--mut);font-size:12px;margin-top:4px;white-space:pre-wrap;word-break:break-all}
+.chip{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:#243142;color:var(--mut);margin-left:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.fchip{background:#0b1118;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:13px}
+.fchip b{font-weight:700}.fchip i{font-style:normal;font-size:11px;margin-left:6px;padding:1px 6px;border-radius:6px}
+.c-sure{background:#123524;color:#8ff0b6}.c-likely{background:#2a2a10;color:#f5dc7a}.c-guess{background:#3a1d14;color:#ffb199}
+.muted{color:var(--mut);font-size:13px}
+.legend span{display:inline-block;margin-right:10px;font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.prog{height:6px;background:#0b1118;border-radius:4px;overflow:hidden;margin:8px 0;display:none}.prog div{height:100%;width:0;background:var(--acc);transition:width .2s}
+.assume{list-style:none;padding:0;margin:0}.assume li{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.assume li .s{display:block;color:var(--mut);font-size:12px}
+details>summary{cursor:pointer;font-weight:700;list-style:none}details>summary::-webkit-details-marker{display:none}
+details>summary:before{content:'▸ ';color:var(--mut)}details[open]>summary:before{content:'▾ '}
+.thumb{max-height:220px;object-fit:contain;background:#fff}
+.mini{display:none;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>CNC Check</h1>
+  <div class="steps" id="steps">
+    <button data-s="1" class="on">1 Program</button>
+    <button data-s="2">2 Drawing</button>
+    <button data-s="3">3 Blank</button>
+    <button data-s="4">4 Results</button>
+  </div>
+</header>
+<main>
+<!-- STEP 1 -->
+<section id="s1" class="on">
+  <div class="card">
+    <h2>Load the program</h2>
+    <p class="hint">Pick the .nc file from your phone.</p>
+    <div class="btn sec filebtn">Choose program file<input type="file" id="ncFile" accept=".nc,.txt,.tap,.ngc,.cnc,.gcode,.ptp,.eia,text/plain,*/*"></div>
+    <details style="margin-top:10px"><summary class="muted">Or paste G-code</summary>
+      <textarea id="ncText" placeholder="%&#10;O1000&#10;G90 G17 G20 ..."></textarea>
+    </details>
+    <div id="ncSummary" class="muted" style="margin-top:8px"></div>
+    <button class="btn" id="to2">Next: the drawing</button>
+  </div>
+</section>
+
+<!-- STEP 2 -->
+<section id="s2">
+  <div class="card">
+    <h2>Drawing (blueprint)</h2>
+    <p class="hint">Take a photo of the print, or pick the drawing as an image or PDF. I read the sizes, the stock note, holes and units off it. Optional, but it helps.</p>
+    <div class="btn sec filebtn">📄 Photo or file of the drawing<input type="file" id="dwgFile" accept="image/*,application/pdf,.pdf"></div>
+    <div class="prog" id="dwgProg"><div></div></div>
+    <div id="dwgStatus" class="muted" style="margin-top:8px"></div>
+    <div class="chips" id="dwgChips"></div>
+    <canvas id="dwgThumb" class="thumb" style="display:none;margin-top:8px"></canvas>
+    <button class="btn" id="to3">Next: photos of the blank</button>
+    <button class="btn link" id="skip2">Skip, no drawing</button>
+  </div>
+</section>
+
+<!-- STEP 3 -->
+<section id="s3">
+  <div class="card">
+    <h2>Blank, from the top</h2>
+    <div class="instr">Lay the blank flat in the middle of a sheet of <b>plain white letter paper</b> on a darker table. Get the <b>whole sheet</b> in the photo and shoot from about 1½ ft above. I find the paper and the blank and measure it.</div>
+    <div class="btn sec filebtn">📷 Top photo<input type="file" id="topPhoto" accept="image/*"></div>
+    <div id="topBox" style="display:none;margin-top:10px">
+      <canvas id="topCv"></canvas>
+      <div class="meas" id="topMeas"></div>
+      <div class="muted" id="topNote"></div>
+      <div id="topTap" style="display:none">
+        <div class="warn" id="topTapMsg"></div>
+        <div class="seg" id="tapShape" style="display:none"><button data-v="rect" class="on">Rectangle</button><button data-v="round">Round</button></div>
+        <div class="row"><button class="btn sec small" id="topUndo">Undo tap</button><button class="btn sec small" id="topRedo">Start over</button></div>
+      </div>
+      <p class="muted">The outlines are draggable if one is off.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Height (side photo)</h2>
+    <div class="instr">Tip the blank onto its side on the same paper and take one more photo from above. I read the height off it. Skip it and I use the drawing or the program.</div>
+    <div class="btn sec filebtn">📷 Side photo<input type="file" id="sidePhoto" accept="image/*"></div>
+    <div id="sideBox" style="display:none;margin-top:10px">
+      <canvas id="sideCv"></canvas>
+      <div class="meas" id="sideMeas"></div>
+      <div class="muted" id="sideNote"></div>
+    </div>
+    <div class="muted" id="hNote" style="margin-top:8px"></div>
+  </div>
+  <div id="mini" class="mini"><div class="banner" id="miniBanner"></div></div>
+  <button class="btn" id="to4">See results</button>
+  <details class="card" style="margin-top:12px"><summary class="muted">No paper? Measure with a ruler instead</summary>
+    <p class="hint">Lay a ruler or 1-2-3 block next to the blank, take a photo, tap both ends of the ruler, then the blank's corners (or 3 points on a round edge).</p>
+    <div class="seg" id="rulerShape"><button data-v="rect" class="on">Rectangle</button><button data-v="round">Round</button></div>
+    <label>Ruler length (in)</label><input id="refLen" type="number" step="0.001" inputmode="decimal" value="6.000">
+    <div class="btn sec filebtn">📷 Photo with ruler<input type="file" id="rulerPhoto" accept="image/*"></div>
+    <canvas id="rulerCv" style="margin-top:8px;display:none"></canvas>
+    <div class="instr" id="rulerInstr" style="display:none"></div>
+    <div class="meas" id="rulerMeas"></div>
+  </details>
+</section>
+
+<!-- STEP 4 -->
+<section id="s4">
+  <div id="banner" class="banner"></div>
+  <div class="card">
+    <canvas id="view" height="360"></canvas>
+    <div class="row" id="viewBtns"><button class="btn sec small" data-v="iso">3D</button><button class="btn sec small" data-v="top">Top</button><button class="btn sec small" data-v="front">Front</button><button class="btn sec small" data-v="side">Side</button></div>
+    <div class="legend" id="legend" style="margin-top:6px"></div>
+    <p class="muted">Drag to turn, pinch to zoom. Tap a problem to see where it happens.</p>
+  </div>
+  <div class="card"><h2>Problems found</h2><div id="issues"></div></div>
+  <details class="card" id="assumeCard" open>
+    <summary>What I assumed</summary>
+    <ul class="assume" id="assumeList"></ul>
+    <button class="btn sec small" id="editBtn">Change something</button>
+    <div id="editBox" style="display:none">
+      <p class="hint">Change anything that's wrong; the check runs again right away.</p>
+      <div class="seg" id="shapeSeg2"><button data-v="rect" class="on">Rectangle</button><button data-v="round">Round</button></div>
+      <div id="rectDims" class="row"><div><label>Length X (in)</label><input id="dL" type="number" step="0.001" inputmode="decimal"></div><div><label>Width Y (in)</label><input id="dW" type="number" step="0.001" inputmode="decimal"></div></div>
+      <div id="roundDims" class="row" style="display:none"><div><label>Diameter (in)</label><input id="dD" type="number" step="0.001" inputmode="decimal"></div><div><label>Center hole dia</label><input id="dB" type="number" step="0.001" inputmode="decimal" value="0"></div></div>
+      <div class="row"><div><label>Height Z (in)</label><input id="dH" type="number" step="0.001" inputmode="decimal"></div><div><label>Stock above Z0</label><input id="dTop" type="number" step="0.001" inputmode="decimal" value="0"></div></div>
+      <div class="row">
+        <div id="xyZeroBox"><label>X0 Y0 is at</label><select id="xyZero"><option value="center">Center of blank</option><option value="front-left">Front-left corner</option><option value="front-right">Front-right corner</option><option value="back-left">Back-left corner</option><option value="back-right">Back-right corner</option></select></div>
+        <div><label>Z0 is at</label><select id="zZero"><option value="top">Top of blank</option><option value="bottom">Bottom of blank</option></select></div>
+      </div>
+      <label>Held by</label>
+      <select id="hold"><option value="vise-y">Vise, jaws on front &amp; back</option><option value="vise-x">Vise, jaws on left &amp; right</option><option value="chuck">Chuck / round jaws</option><option value="none">Nothing to hit (plate / vacuum)</option></select>
+      <div class="row"><div><label>Blank in the jaws (in)</label><input id="grip" type="number" step="0.01" inputmode="decimal" value="0.5"></div><div><label>Jaw thickness (in)</label><input id="thick" type="number" step="0.01" inputmode="decimal" value="1.0"></div></div>
+      <div class="row"><div><label>Jaw length (in)</label><input id="jawLen" type="number" step="0.1" inputmode="decimal" value="6"></div><div><label>Clearance under blank</label><input id="below" type="number" step="0.01" inputmode="decimal" value="0"></div></div>
+      <h2 style="margin-top:12px">Work offsets</h2><table id="wcsTbl"></table>
+      <h2 style="margin-top:12px">Tools</h2><table id="toolTbl"></table>
+      <h2 style="margin-top:12px">Machine</h2>
+      <div class="row"><div><label>X travel</label><input id="mx" type="number" value="42"></div><div><label>Y travel</label><input id="my" type="number" value="24"></div><div><label>Z travel</label><input id="mz" type="number" value="24"></div></div>
+      <label><input type="checkbox" id="autoLen" style="width:auto"> Control applies tool length automatically at M06</label>
+      <button class="btn sec" id="resetAuto">Go back to my automatic setup</button>
+    </div>
+  </details>
+  <div class="card muted">
+    This checks the blank, the jaws or chuck, and the table under the part against the tool tip and diameter. It doesn't model tool holders, the spindle nose, or fixtures it can't see. Photo sizes are good to a few thousandths on a good shot, worse on a bad one. Always prove out a new program with graphics and single block.
+  </div>
+</section>
+</main>
+<script src="core.js"></script>
+<script src="vision.js"></script>
+<script src="auto.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
