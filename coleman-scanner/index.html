@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon.svg">
+<title>Coleman Scanner</title><style>
+body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#0b0f14;color:#e6edf3}
+header{padding:18px 16px 6px}h1{margin:0;font-size:22px}small{color:#8b98a5}
+.card{background:#151b23;margin:12px;border-radius:14px;padding:14px}
+.feed h2{margin:0 0 4px;font-size:17px}.feed p{margin:4px 0 10px;color:#8b98a5;font-size:14px}
+button{background:#1f6feb;color:#fff;border:0;border-radius:10px;padding:12px 16px;font-size:16px;width:100%}
+button.on{background:#e53935}a{color:#4fc3f7}.st{font-size:13px;margin-top:8px;color:#8b98a5}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:6px 2px;border-bottom:1px solid #222b36}td:first-child{font-family:monospace;color:#4fc3f7}
+h3{margin:14px 0 6px;font-size:15px;color:#8b98a5}
+</style></head><body>
+<header><h1>📻 Coleman County Scanner</h1><small>Live public-safety audio for Coleman, TX</small></header>
+<div id="feeds"></div>
+<div class="card"><h2 style="margin:0">Frequencies</h2><small>For a handheld scanner. Source: RadioReference.</small><div id="freqs"></div></div>
+<div class="card st">Audio comes from volunteer feeds on Broadcastify, which may play a short ad first and can go offline. If a feed won't play, tap "Open on Broadcastify".</div>
+<audio id="a" preload="none"></audio>
+<script>
+const FEEDS=[
+{id:43489,name:"Brown County Public Safety",note:"Includes Coleman County Sheriff, Fire and EMS"},
+{id:29076,name:"Taylor County Fire & EMS",note:"Includes Coleman County Sheriff and EMS, plus Abilene area"}];
+const FREQS={"Coleman County":[["155.625","Sheriff dispatch"],["154.860","Sheriff talk-around"],["154.370","Fire dispatch"],["154.0625","EMS dispatch"],["155.340","Medical district"]],
+"City of Coleman":[["158.850","Police / Fire dispatch"],["155.865","Police tactical"],["37.180","Police alternate"],["155.955","Public works"]],
+"Santa Anna":[["155.925","Public works"]]};
+const a=document.getElementById('a');let cur=null;
+document.getElementById('feeds').innerHTML=FEEDS.map(f=>`<div class="card feed"><h2>${f.name}</h2><p>${f.note}</p>
+<button id="b${f.id}" onclick="play(${f.id})">▶ Listen live</button><div class="st" id="s${f.id}"><a href="https://www.broadcastify.com/listen/feed/${f.id}" target="_blank">Open on Broadcastify</a></div></div>`).join('');
+document.getElementById('freqs').innerHTML=Object.entries(FREQS).map(([k,v])=>`<h3>${k}</h3><table>${v.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`).join('');
+function ui(){FEEDS.forEach(f=>{const b=document.getElementById('b'+f.id);b.className=cur===f.id?'on':'';b.textContent=cur===f.id?'■ Stop':'▶ Listen live'})}
+function play(id){if(cur===id){a.pause();a.removeAttribute('src');a.load();cur=null;return ui()}
+cur=id;ui();a.src='https://broadcastify.cdnstream1.com/'+id;a.play().catch(()=>{});
+const s=document.getElementById('s'+id);s.textContent='Connecting…';
+a.onplaying=()=>{s.textContent='Live';};a.onerror=()=>{s.innerHTML=`Couldn't play here. <a href="https://www.broadcastify.com/listen/feed/${id}" target="_blank">Open on Broadcastify</a>`;cur=null;ui()};
+if('mediaSession'in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:FEEDS.find(f=>f.id===id).name,artist:'Coleman Scanner'});}
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
